@@ -78,20 +78,32 @@ const LearnerSubmissions = [
 
 function getLearnerData(course, ag, submissions) {
   // here, we would process this data to achieve the desired result.
-  const result = [
-    {
-      id: 125,
-      avg: 0.985, // (47 + 150) / (50 + 150)
-      1: 0.94, // 47 / 50
-      2: 1.0 // 150 / 150
-    },
-    {
-      id: 132,
-      avg: 0.82, // (39 + 125) / (50 + 150)
-      1: 0.78, // 39 / 50
-      2: 0.833 // late: (140 - 15) / 150
+  const result = [];
+
+  if (ag.course_id !== course.id) {
+    throw new Error("If an AssignmentGroup does not belong to its course (mismatching course_id)");
+  }
+
+  const assignments = {};
+  for (let a of ag.assignments) {
+    const dueDate = new Date(a.due_at);
+    if (dueDate <= new Date()) {
+      if (typeof a.points_possible !== "number" || a.points_possible === 0) {
+        continue;      }
+      assignments[a.id] = a;
     }
-  ];
+  }
+
+  
+
+
+
+
+
+
+ 
+
+
 
   return result;
 }
