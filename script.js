@@ -78,36 +78,86 @@ const LearnerSubmissions = [
 
 function getLearnerData(course, ag, submissions) {
   // here, we would process this data to achieve the desired result.
-  const result = [];
+  const result = [ ];
 
-  if (ag.course_id !== course.id) {
-    throw new Error("If an AssignmentGroup does not belong to its course (mismatching course_id)");
-  }
 
-  const assignments = {};
-  for (let a of ag.assignments) {
-    const dueDate = new Date(a.due_at);
-    if (dueDate <= new Date()) {
-      if (typeof a.points_possible !== "number" || a.points_possible === 0) {
-        continue;      }
-      assignments[a.id] = a;
+  
+   try {
+    if (ag.course_id !== course.id) {
+      throw new Error("AssignmentGroup does not belong to its course (mismatching course_id), ");
     }
+
+    const now = new Date();
+    const assignments = {};
+    for (let a of ag.assignments) {
+      const due = new Date(a.due_at);
+      const points = Number(a.points_possible);
+      if (due <= now && points > 0) {
+        assignments[a.id] = {
+          due_at: due,
+          points_possible: points
+        };
+      }
+    }
+
+    const learners = {};
+
+    for (let s of submissions) {
+      const a = assignments[s.assignment_id];
+      if (!a) continue;
+
+      const id = s.learner_id;
+      if (!learners[id]) {
+        learners[id] = {
+          id: id,
+          totalScore: 0,
+          totalPossible: 0,
+          assignments: {}
+        };
+      }
+
+      let score = Number(s.submission.score);
+      const submitted = new Date(s.submission.submitted_at);
+      if (submitted > a.due_at) {
+        score -= a.points_possible * 0.1;
+      }
+      if (score < 0) score = 0;
+
+      learners[id].totalScore += score;
+      learners[id].totalPossible += a.points_possible;
+      learners[id].assignments[s.assignment_id] = parseFloat((score / a.points_possible).toFixed(3));
+    }
+
+    for (let id in learners) {
+      const l = learners[id];
+      const obj = { id: l.id, avg: parseFloat((l.totalScore / l.totalPossible).toFixed(3)) };
+      for (let aid in l.assignments) {
+        obj[aid] = l.assignments[aid];
+      }
+      result.push(obj);
+    }
+
+  } catch (e) {
+    console.error(e.message);
   }
+
+  return result;
+}
+
+
+
+const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
+
+console.log(result);
+
+
+
+   
+
+
 
   
 
 
 
 
-
-
- 
-
-
-
-  return result;
-}
-
-const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
-
-console.log(result);
